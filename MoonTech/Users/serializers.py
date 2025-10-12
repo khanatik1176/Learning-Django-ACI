@@ -38,3 +38,4 @@ class UserProfileSerializer(ModelSerializer):
     class Meta:
         model = userProfile
         fields = '__all__'
+
