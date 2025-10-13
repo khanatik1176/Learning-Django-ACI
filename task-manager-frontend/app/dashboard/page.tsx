@@ -6,6 +6,7 @@ import Navbar from "@/components/Navbar";
 import api from "@/lib/api"; // use axios instance with interceptor
 import { toast } from "react-toastify";
 import AdminPanel from "@/components/AdminPanel";
+import React, { useState, useEffect } from "react";
 
 type Task = {
   id: number;
@@ -42,14 +43,26 @@ export default function Dashboard() {
     );
   }
 
-  // User task list (unchanged behaviour, but using api instance)
+  // Search state for user tasks
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(timeout);
+  }, [search]);
+
+  // User task list with search functionality
   const { data: tasks, isLoading } = useQuery<Task[]>({
-    queryKey: ["tasks"],
+    queryKey: ["tasks", debouncedSearch],
     queryFn: async () => {
-      const res = await api.get("/tasks/");
-      // handle paginated results if backend uses results
+      const url = debouncedSearch
+        ? `/tasks/?search=${encodeURIComponent(debouncedSearch)}`
+        : "/tasks/";
+      const res = await api.get(url);
       return res.data.results || res.data || [];
     },
+    keepPreviousData: true,
   });
 
   const createTask = useMutation({
@@ -78,6 +91,22 @@ export default function Dashboard() {
       <Navbar />
       <div className="max-w-2xl mx-auto py-10">
         <h2 className="text-2xl font-bold mb-4">Your Tasks</h2>
+
+        {/* Search input */}
+        <div className="mb-3 flex gap-2">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search tasks..."
+            className="border p-2 rounded w-full"
+          />
+          <button
+            onClick={() => setSearch("")}
+            className="px-3 bg-gray-200 rounded"
+          >
+            Clear
+          </button>
+        </div>
 
         {/* Add Task Form */}
         <form

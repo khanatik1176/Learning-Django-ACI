@@ -31,12 +31,24 @@ export default function AdminPanel() {
     },
   });
 
+  // search state + debounce
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
   const { data: tasks, isLoading: tasksLoading } = useQuery<Task[]>({
-    queryKey: ["tasks"],
+    queryKey: ["tasks", debouncedSearch],
     queryFn: async () => {
-      const res = await api.get("/tasks/");
+      const url = debouncedSearch
+        ? `/tasks/?search=${encodeURIComponent(debouncedSearch)}`
+        : "/tasks/";
+      const res = await api.get(url);
       return res.data.results || res.data || [];
     },
+    keepPreviousData: true,
   });
 
   // local state to make reordering instant
@@ -50,7 +62,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     if (tasks) setTasksState(tasks);
-  }, [tasks]);
+  }, [tasks, debouncedSearch]);
 
   const toggleBan = useMutation({
     mutationFn: async ({ id, banned }: { id: number; banned: boolean }) => {
@@ -109,7 +121,6 @@ export default function AdminPanel() {
     const [srcList, srcIndexStr] = payload.split(":");
     const srcIndex = Number(srcIndexStr);
     if (srcList !== destList) {
-      // currently do not support cross-list moves
       setDragging(null);
       return;
     }
@@ -123,7 +134,7 @@ export default function AdminPanel() {
       if (srcIndex === destIndex) return setDragging(null);
       const ordered = reorder(tasksState, srcIndex, destIndex);
       setTasksState(ordered);
-      qc.setQueryData(["tasks"], ordered);
+      qc.setQueryData(["tasks", debouncedSearch], ordered);
     }
     setDragging(null);
   };
@@ -153,7 +164,7 @@ export default function AdminPanel() {
       const [moved] = copy.splice(srcIndex, 1);
       copy.push(moved);
       setTasksState(copy);
-      qc.setQueryData(["tasks"], copy);
+      qc.setQueryData(["tasks", debouncedSearch], copy);
     }
     setDragging(null);
   };
@@ -215,6 +226,23 @@ export default function AdminPanel() {
         onDrop={(e) => onDropOnList(e, "tasks")}
       >
         <h3 className="text-lg font-semibold mb-4">All Tasks</h3>
+
+        {/* Search input */}
+        <div className="mb-3 flex gap-2">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search tasks..."
+            className="border p-2 rounded w-full"
+          />
+          <button
+            onClick={() => setSearch("")}
+            className="px-3 bg-gray-200 rounded"
+          >
+            Clear
+          </button>
+        </div>
+
         <div className="space-y-3">
           {tasksState?.length ? (
             tasksState.map((t, index) => {
