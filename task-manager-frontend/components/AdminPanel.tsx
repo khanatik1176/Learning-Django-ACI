@@ -20,6 +20,13 @@ type Task = {
   status: string;
 };
 
+type NewUser = {
+  username: string;
+  email: string;
+  password: string;
+  role: string;
+};
+
 export default function AdminPanel() {
   const qc = useQueryClient();
 
@@ -31,38 +38,13 @@ export default function AdminPanel() {
     },
   });
 
-  // search state + debounce
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState(search);
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => clearTimeout(t);
-  }, [search]);
-
   const { data: tasks, isLoading: tasksLoading } = useQuery<Task[]>({
-    queryKey: ["tasks", debouncedSearch],
+    queryKey: ["tasks"],
     queryFn: async () => {
-      const url = debouncedSearch
-        ? `/tasks/?search=${encodeURIComponent(debouncedSearch)}`
-        : "/tasks/";
-      const res = await api.get(url);
+      const res = await api.get("/tasks/");
       return res.data.results || res.data || [];
     },
-    keepPreviousData: true,
   });
-
-  // local state to make reordering instant
-  const [usersState, setUsersState] = useState<AdminUser[]>([]);
-  const [tasksState, setTasksState] = useState<Task[]>([]);
-  const [dragging, setDragging] = useState<{ list: "users" | "tasks"; index: number } | null>(null);
-
-  useEffect(() => {
-    if (users) setUsersState(users);
-  }, [users]);
-
-  useEffect(() => {
-    if (tasks) setTasksState(tasks);
-  }, [tasks, debouncedSearch]);
 
   const toggleBan = useMutation({
     mutationFn: async ({ id, banned }: { id: number; banned: boolean }) => {
@@ -93,126 +75,78 @@ export default function AdminPanel() {
     onError: () => toast.error("Failed to complete task"),
   });
 
+  const addUser = useMutation({
+    mutationFn: async (newUser: NewUser) => {
+      return api.post("/admin/users/generate/", { ...newUser, is_banned: false });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      toast.success("User added successfully");
+    },
+    onError: () => toast.error("Failed to add user"),
+  });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newUser, setNewUser] = useState<NewUser>({
+    username: "",
+    email: "",
+    password: "",
+    role: "User",
+  });
+
+  const handleAddUser = () => {
+    addUser.mutate(newUser, {
+      onSuccess: () => {
+        setIsModalOpen(false);
+        setNewUser({ username: "", email: "", password: "", role: "User" });
+      },
+    });
+  };
+
   if (usersLoading || tasksLoading) return <p>Loading...</p>;
-
-  // Helpers
-  function reorder<T>(list: T[], from: number, to: number) {
-    const copy = Array.from(list);
-    const [item] = copy.splice(from, 1);
-    copy.splice(to, 0, item);
-    return copy;
-  }
-
-  // Drag handlers using native HTML5 drag/drop
-  const onDragStart = (e: React.DragEvent, list: "users" | "tasks", index: number) => {
-    e.dataTransfer.setData("text/plain", `${list}:${index}`);
-    e.dataTransfer.effectAllowed = "move";
-    setDragging({ list, index });
-  };
-
-  const onDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // allow drop
-  };
-
-  const onDropOnItem = (e: React.DragEvent, destList: "users" | "tasks", destIndex: number) => {
-    e.preventDefault();
-    const payload = e.dataTransfer.getData("text/plain");
-    if (!payload) return;
-    const [srcList, srcIndexStr] = payload.split(":");
-    const srcIndex = Number(srcIndexStr);
-    if (srcList !== destList) {
-      setDragging(null);
-      return;
-    }
-
-    if (destList === "users") {
-      if (srcIndex === destIndex) return setDragging(null);
-      const ordered = reorder(usersState, srcIndex, destIndex);
-      setUsersState(ordered);
-      qc.setQueryData(["admin-users"], ordered);
-    } else {
-      if (srcIndex === destIndex) return setDragging(null);
-      const ordered = reorder(tasksState, srcIndex, destIndex);
-      setTasksState(ordered);
-      qc.setQueryData(["tasks", debouncedSearch], ordered);
-    }
-    setDragging(null);
-  };
-
-  // drop on list container to move to end
-  const onDropOnList = (e: React.DragEvent, destList: "users" | "tasks") => {
-    e.preventDefault();
-    const payload = e.dataTransfer.getData("text/plain");
-    if (!payload) return;
-    const [srcList, srcIndexStr] = payload.split(":");
-    const srcIndex = Number(srcIndexStr);
-    if (srcList !== destList) {
-      setDragging(null);
-      return;
-    }
-
-    if (destList === "users") {
-      if (srcIndex === usersState.length - 1) return setDragging(null);
-      const copy = Array.from(usersState);
-      const [moved] = copy.splice(srcIndex, 1);
-      copy.push(moved);
-      setUsersState(copy);
-      qc.setQueryData(["admin-users"], copy);
-    } else {
-      if (srcIndex === tasksState.length - 1) return setDragging(null);
-      const copy = Array.from(tasksState);
-      const [moved] = copy.splice(srcIndex, 1);
-      copy.push(moved);
-      setTasksState(copy);
-      qc.setQueryData(["tasks", debouncedSearch], copy);
-    }
-    setDragging(null);
-  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {/* Users column */}
-      <div
-        className="bg-white p-4 rounded-xl shadow"
-        onDragOver={onDragOver}
-        onDrop={(e) => onDropOnList(e, "users")}
-      >
-        <h3 className="text-lg font-semibold mb-4">Users</h3>
+      <div className="bg-white p-4 rounded-xl shadow">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold">Users</h3>
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          >
+            Add User
+          </button>
+        </div>
         <div className="space-y-2">
-          {usersState?.length ? (
-            usersState.map((u, index) => {
-              const isDragging = dragging?.list === "users" && dragging.index === index;
-              return (
-                <div
-                  key={u.id}
-                  draggable
-                  onDragStart={(e) => onDragStart(e, "users", index)}
-                  onDragOver={onDragOver}
-                  onDrop={(e) => onDropOnItem(e, "users", index)}
-                  onDragEnd={() => setDragging(null)}
-                  className={`flex items-center justify-between p-3 border rounded transition ${
-                    isDragging ? "opacity-60 bg-gray-50 shadow-md" : "bg-white"
-                  }`}
-                >
-                  <div>
-                    <div className="font-medium">
-                      {u.username} ({u.role})
-                    </div>
-                    <div className="text-sm text-gray-500">{u.email}</div>
+          {users?.length ? (
+            users.map((u) => (
+              <div
+                key={u.id}
+                className="flex items-center justify-between p-3 border rounded"
+              >
+                <div>
+                  <div className="font-medium">
+                    {u.username} ({u.role})
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => toggleBan.mutate({ id: u.id, banned: !u.is_banned })}
-                      className={`px-3 py-1 rounded text-white ${
-                        u.is_banned ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"
-                      }`}
-                    >
-                      {u.is_banned ? "Unban" : "Ban"}
-                    </button>
-                  </div>
+                  <div className="text-sm text-gray-500">{u.email}</div>
                 </div>
-              );
-            })
+                <div className="flex gap-2">
+                  <button
+                    onClick={() =>
+                      toggleBan.mutate({ id: u.id, banned: !u.is_banned })
+                    }
+                    className={`px-3 py-1 rounded text-white ${
+                      u.is_banned
+                        ? "bg-green-600 hover:bg-green-700"
+                        : "bg-red-600 hover:bg-red-700"
+                    }`}
+                  >
+                    {u.is_banned ? "Unban" : "Ban"}
+                  </button>
+                </div>
+              </div>
+            ))
           ) : (
             <p>No users found</p>
           )}
@@ -220,78 +154,114 @@ export default function AdminPanel() {
       </div>
 
       {/* Tasks column */}
-      <div
-        className="bg-white p-4 rounded-xl shadow"
-        onDragOver={onDragOver}
-        onDrop={(e) => onDropOnList(e, "tasks")}
-      >
+      <div className="bg-white p-4 rounded-xl shadow">
         <h3 className="text-lg font-semibold mb-4">All Tasks</h3>
-
-        {/* Search input */}
-        <div className="mb-3 flex gap-2">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search tasks..."
-            className="border p-2 rounded w-full"
-          />
-          <button
-            onClick={() => setSearch("")}
-            className="px-3 bg-gray-200 rounded"
-          >
-            Clear
-          </button>
-        </div>
-
         <div className="space-y-3">
-          {tasksState?.length ? (
-            tasksState.map((t, index) => {
-              const isDragging = dragging?.list === "tasks" && dragging.index === index;
-              return (
-                <div
-                  key={t.id}
-                  draggable
-                  onDragStart={(e) => onDragStart(e, "tasks", index)}
-                  onDragOver={onDragOver}
-                  onDrop={(e) => onDropOnItem(e, "tasks", index)}
-                  onDragEnd={() => setDragging(null)}
-                  className={`flex items-start justify-between p-3 border rounded transition ${
-                    isDragging ? "opacity-60 bg-gray-50 shadow-md" : "bg-white"
-                  }`}
-                >
-                  <div>
-                    <div className="font-medium">{t.title}</div>
-                    <div className="text-sm text-gray-500">{t.description}</div>
-                    <div className={`text-sm font-medium mt-1 ${t.status === "completed" ? "text-green-600" : "text-yellow-600"}`}>
-                      {t.status}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2 ml-4">
-                    {t.status !== "completed" && (
-                      <button
-                        onClick={() => completeTask.mutate(t.id)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
-                      >
-                        Complete
-                      </button>
-                    )}
-
-                    <button
-                      onClick={() => deleteTask.mutate(t.id)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
-                    >
-                      Delete
-                    </button>
+          {tasks?.length ? (
+            tasks.map((t) => (
+              <div
+                key={t.id}
+                className="flex items-start justify-between p-3 border rounded"
+              >
+                <div>
+                  <div className="font-medium">{t.title}</div>
+                  <div className="text-sm text-gray-500">{t.description}</div>
+                  <div
+                    className={`text-sm font-medium mt-1 ${
+                      t.status === "completed"
+                        ? "text-green-600"
+                        : "text-yellow-600"
+                    }`}
+                  >
+                    {t.status}
                   </div>
                 </div>
-              );
-            })
+
+                <div className="flex flex-col gap-2 ml-4">
+                  {t.status !== "completed" && (
+                    <button
+                      onClick={() => completeTask.mutate(t.id)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
+                    >
+                      Complete
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => deleteTask.mutate(t.id)}
+                    className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))
           ) : (
             <p>No tasks found</p>
           )}
         </div>
       </div>
+
+      {/* Add User Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Add New User</h3>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Username"
+                value={newUser.username}
+                onChange={(e) =>
+                  setNewUser((prev) => ({ ...prev, username: e.target.value }))
+                }
+                className="border p-2 w-full rounded"
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={newUser.email}
+                onChange={(e) =>
+                  setNewUser((prev) => ({ ...prev, email: e.target.value }))
+                }
+                className="border p-2 w-full rounded"
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={newUser.password}
+                onChange={(e) =>
+                  setNewUser((prev) => ({ ...prev, password: e.target.value }))
+                }
+                className="border p-2 w-full rounded"
+              />
+              <select
+                value={newUser.role}
+                onChange={(e) =>
+                  setNewUser((prev) => ({ ...prev, role: e.target.value }))
+                }
+                className="border p-2 w-full rounded"
+              >
+                <option value="User">User</option>
+              </select>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddUser}
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+              >
+                Add User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

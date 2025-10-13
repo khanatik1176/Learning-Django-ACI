@@ -65,7 +65,7 @@ export default function Dashboard() {
       setTotalPages(Math.ceil(res.data.count / 10)); // Assuming 10 tasks per page
       return res.data.results || [];
     },
-    keepPreviousData: true,
+    placeholderData: [],
   });
 
   const createTask = useMutation({
@@ -147,7 +147,7 @@ export default function Dashboard() {
         {/* Task List */}
         <div className="space-y-4">
           {tasks?.length ? (
-            tasks.map((task) => (
+            tasks.map((task: Task) => (
               <div
                 key={task.id}
                 className="bg-white p-4 rounded-lg shadow flex justify-between items-center"

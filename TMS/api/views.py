@@ -59,3 +59,10 @@ class AdminUserViewSet(viewsets.ModelViewSet):
         user.is_banned = False
         user.save()
         return Response({'status': f'{user.username} unbanned successfully'})
+    
+    @action(detail=False, methods=['post'])
+    def generate(self, request, *args, **kwargs):
+        serializer = RegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response(UserSerializer(user).data)
