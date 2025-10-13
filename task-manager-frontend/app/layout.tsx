@@ -8,8 +8,8 @@ import { ToastContainer } from "react-toastify";
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "6sense Depsheildio",
-  description: "Performance Automation for 6sense Team",
+  title: "ACI PLC - Task Manager",
+  description: "Performance Automation for ACI PLC Team",
   icons: {
     icon: "./favicon.ico",
   },
