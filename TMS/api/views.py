@@ -6,12 +6,15 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .models import User, Task
-from .serializers import UserSerializer, RegisterSerializer, TaskSerializer
+from .serializers import UserSerializer, RegisterSerializer, TaskSerializer, CustomTokenObtainPairSerializer
 from .permissions import IsAdmin
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
 
 class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
