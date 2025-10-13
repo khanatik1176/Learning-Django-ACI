@@ -46,21 +46,24 @@ export default function Dashboard() {
   // Search state for user tasks
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const [currentPage, setCurrentPage] = useState(1); // Pagination state
+  const [totalPages, setTotalPages] = useState(1); // Total pages from the API
 
   useEffect(() => {
     const timeout = setTimeout(() => setDebouncedSearch(search.trim()), 300);
     return () => clearTimeout(timeout);
   }, [search]);
 
-  // User task list with search functionality
-  const { data: tasks, isLoading } = useQuery<Task[]>({
-    queryKey: ["tasks", debouncedSearch],
+  // User task list with search and pagination functionality
+  const { data: tasks, isLoading } = useQuery({
+    queryKey: ["tasks", debouncedSearch, currentPage],
     queryFn: async () => {
       const url = debouncedSearch
-        ? `/tasks/?search=${encodeURIComponent(debouncedSearch)}`
-        : "/tasks/";
+        ? `/tasks/?search=${encodeURIComponent(debouncedSearch)}&page=${currentPage}`
+        : `/tasks/?page=${currentPage}`;
       const res = await api.get(url);
-      return res.data.results || res.data || [];
+      setTotalPages(Math.ceil(res.data.count / 10)); // Assuming 10 tasks per page
+      return res.data.results || [];
     },
     keepPreviousData: true,
   });
@@ -173,6 +176,37 @@ export default function Dashboard() {
           ) : (
             <p className="text-center text-gray-500">No tasks available</p>
           )}
+        </div>
+
+        {/* Pagination Controls */}
+        <div className="flex justify-between items-center mt-6">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className={`px-4 py-2 rounded ${
+              currentPage === 1
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+            }`}
+          >
+            Previous
+          </button>
+          <span>
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
+            disabled={currentPage === totalPages}
+            className={`px-4 py-2 rounded ${
+              currentPage === totalPages
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+            }`}
+          >
+            Next
+          </button>
         </div>
       </div>
     </>
