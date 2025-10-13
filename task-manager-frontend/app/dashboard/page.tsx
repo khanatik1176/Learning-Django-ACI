@@ -2,10 +2,10 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import axios from "axios";
 import Navbar from "@/components/Navbar";
-import { backendURL } from "@/config";
+import api from "@/lib/api"; // use axios instance with interceptor
 import { toast } from "react-toastify";
+import AdminPanel from "@/components/AdminPanel";
 
 type Task = {
   id: number;
@@ -23,25 +23,37 @@ type TaskForm = {
 export default function Dashboard() {
   const queryClient = useQueryClient();
   const { register, handleSubmit, reset } = useForm<TaskForm>();
-  const token = typeof window !== "undefined" ? localStorage.getItem("access") : null;
 
-  // Fetch Tasks
+  const user =
+    typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("user") || "null")
+      : null;
+
+  // show admin panel when role === "admin"
+  if (user?.role === "admin") {
+    return (
+      <>
+        <Navbar />
+        <div className="max-w-4xl mx-auto py-10">
+          <h2 className="text-2xl font-bold mb-4">Admin Dashboard</h2>
+          <AdminPanel />
+        </div>
+      </>
+    );
+  }
+
+  // User task list (unchanged behaviour, but using api instance)
   const { data: tasks, isLoading } = useQuery<Task[]>({
     queryKey: ["tasks"],
     queryFn: async () => {
-      const res = await axios.get(`${backendURL}/tasks/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return res.data.results || [];
+      const res = await api.get("/tasks/");
+      // handle paginated results if backend uses results
+      return res.data.results || res.data || [];
     },
   });
 
-  // Create Task
   const createTask = useMutation({
-    mutationFn: (newTask: TaskForm) =>
-      axios.post(`${backendURL}/tasks/`, newTask, {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
+    mutationFn: (newTask: TaskForm) => api.post("/tasks/", newTask),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       toast.success("Task added!");
@@ -50,12 +62,8 @@ export default function Dashboard() {
     onError: () => toast.error("Failed to add task!"),
   });
 
-  // Delete Task
   const deleteTask = useMutation({
-    mutationFn: (id: number) =>
-      axios.delete(`${backendURL}/tasks/${id}/`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
+    mutationFn: (id: number) => api.delete(`/tasks/${id}/`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] });
       toast.success("Task deleted!");

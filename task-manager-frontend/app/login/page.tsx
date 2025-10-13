@@ -20,6 +20,7 @@ export default function LoginPage() {
       const res = await axios.post(`${backendURL}/login/`, data);
       localStorage.setItem("access", res.data.access);
       localStorage.setItem("refresh", res.data.refresh);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
       toast.success("Login successful!");
       router.push("/dashboard");
     } catch {

@@ -31,6 +31,14 @@ class TaskViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    @action(detail=True, methods=['get'],permission_classes=[IsAdmin])
+    def completed(self, request, pk=None):
+        task = self.get_object()
+        task.status = 'completed'
+        task.save()
+        return Response({'status': 'Task marked as completed'})
+
+
 
 class AdminUserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
