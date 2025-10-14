@@ -39,6 +39,7 @@ class CustomTokenObtainPairSerializer(serializers.Serializer):
 
 class TaskSerializer(serializers.ModelSerializer):
     comments = CommentSerializer(many=True, read_only=True)
+    user = UserSerializer(read_only=True)
     class Meta:
         model = Task
         fields = '__all__'
