@@ -30,7 +30,7 @@ class ResetPasswordSerializer(serializers.Serializer):
 
     def validate(self, attrs):
         email = attrs.get('email')
-        new_password = attrs.get('new_password')
+        # new_password = attrs.get('new_password')
 
         try: 
             user = User.objects.get(email=email)
