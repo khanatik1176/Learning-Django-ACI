@@ -24,4 +24,5 @@ urlpatterns = [
     path('api/', include('comment.urls')),
     path('api/', include('engagement.urls')),
     path('api/', include('taskCategory.urls')),
+    path('api/', include('subtasks.urls')),
 ]

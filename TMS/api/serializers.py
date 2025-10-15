@@ -7,6 +7,8 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from comment.serializers import CommentSerializer
 from engagement.serializers import EngagementSerializer
+from subtasks.serializers import SubtaskSerializer
+
 class UserSerializer(serializers.ModelSerializer):
     class Meta: 
         model=User
@@ -21,6 +23,33 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['password'] = make_password(validated_data['password'])
         return User.objects.create(**validated_data)
+    
+class ResetPasswordSerializer(serializers.Serializer):
+    email= serializers.EmailField(required=True)
+    new_password = serializers.CharField(write_only=True, required=True)
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        new_password = attrs.get('new_password')
+
+        try: 
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError('User with this email does not exist.')
+        
+        # if len(new_password) < 8:
+        #     raise serializers.ValidationError('Password must be at least 8 characters long.')
+
+        self.context['user'] = user
+        return attrs
+    
+    def save(self):
+        user = self.context['user']
+        new_password = self.validated_data['new_password']
+        user.set_password(new_password)
+        user.save()
+        return user
+
     
 class CustomTokenObtainPairSerializer(serializers.Serializer):
     username = serializers.CharField()
@@ -44,10 +73,13 @@ class TaskSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     engagements = EngagementSerializer(many=True, read_only=True)
     category = TaskCategorySerializer(read_only=True)
+    subtasks = SubtaskSerializer(many=True, read_only=True)
+    subtask_count = serializers.SerializerMethodField() 
 
     class Meta:
         model = Task
         fields = '__all__'
-        read_only_fields = ['user', 'comments', 'engagements', 'category']
+        read_only_fields = ['user', 'comments', 'engagements', 'category', 'subtasks']
 
-    
+    def get_subtask_count(self, obj):
+        return obj.subtasks.count()

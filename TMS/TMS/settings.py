@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "comment",
     "engagement",
     "taskCategory",
+    "subtasks"
 
 ]
 

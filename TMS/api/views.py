@@ -4,7 +4,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
-
+from rest_framework.views import APIView
+from rest_framework import status
+from .serializers import ResetPasswordSerializer
 from .models import User, Task
 from .serializers import UserSerializer, RegisterSerializer, TaskSerializer, CustomTokenObtainPairSerializer
 from .permissions import IsAdmin
@@ -38,6 +40,13 @@ class TaskViewSet(viewsets.ModelViewSet):
         task.save()
         return Response({'status': 'Task marked as completed'})
 
+class ResetPasswordView(APIView):
+    def post(self, request): 
+        serializer= ResetPasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'status': 'Password reset successful'}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=400)
 
 
 class AdminUserViewSet(viewsets.ModelViewSet):
