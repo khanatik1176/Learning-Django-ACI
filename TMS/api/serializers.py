@@ -1,4 +1,6 @@
 from rest_framework import serializers
+
+from taskCategory.serializers import TaskCategorySerializer
 from .models import User, Task
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import authenticate
@@ -41,10 +43,11 @@ class TaskSerializer(serializers.ModelSerializer):
     comments = CommentSerializer(many=True, read_only=True)
     user = UserSerializer(read_only=True)
     engagements = EngagementSerializer(many=True, read_only=True)
+    category = TaskCategorySerializer(read_only=True)
 
     class Meta:
         model = Task
         fields = '__all__'
-        read_only_fields = ['user', 'comments', 'engagements']
+        read_only_fields = ['user', 'comments', 'engagements', 'category']
 
     

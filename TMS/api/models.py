@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from taskCategory.models import TaskCategory
 
 class User(AbstractUser):
     ROLE_CHOICES = [
@@ -15,6 +16,7 @@ class User(AbstractUser):
 
 class Task(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tasks')
+    category = models.ForeignKey(TaskCategory, on_delete=models.CASCADE, related_name='tasks', default=1)
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=[('pending', 'Pending'), ('completed', 'Completed')], default='pending')
