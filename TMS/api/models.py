@@ -6,6 +6,9 @@ class User(AbstractUser):
     ROLE_CHOICES = [
         ('admin', 'Admin'),
         ('user', 'User'),
+        ('moderator', 'Moderator'),
+        ('guest', 'Guest'),
+        ('editor', 'Editor'),
     ]
     role=models.CharField(max_length=10, choices=ROLE_CHOICES, default='user')
     is_banned=models.BooleanField(default=False)
