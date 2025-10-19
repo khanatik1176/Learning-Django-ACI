@@ -43,9 +43,17 @@ INSTALLED_APPS = [
     "comment",
     "engagement",
     "taskCategory",
-    "subtasks"
-
+    "subtasks",
+    'django.contrib.sites',
+    'rest_framework.authtoken',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'dj_rest_auth.registration',
 ]
+
+SITE_ID = 1
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -64,6 +72,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+
 ]
 
 ROOT_URLCONF = "TMS.urls"
@@ -104,6 +114,12 @@ DATABASES = {
 AUTH_USER_MODEL = 'api.User'
 
 CORS_ALLOW_ALL_ORIGINS = True  # for local development
+
+ACCOUNT_AUTHENTICATION_METHOD = "email"  # Use Email / Password authentication
+ACCOUNT_USERNAME_REQUIRED = False
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = "none" # Do not require email confirmation
+
 
 
 # Password validation
