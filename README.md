@@ -67,25 +67,7 @@ Follow these steps to run the project locally:
 
 ### 6️⃣ Run the development server
     python manage.py runserver
-
-## 📂 Project Structure
-
-📁 Learning-Django-ACI/
-├── 📄 manage.py
-├── 📄 requirements.txt
-├── 📘 README.md
-│
-├── 📁 core/ # Main project configuration (settings, urls, etc.)
-│
-├── 📁 apps/
-│ ├── 📁 users/ # Handles user authentication and profiles
-│ ├── 📁 tasks/ # Example app for CRUD operations
-│ └── 📁 ... # Add more modular apps here
-│
-├── 📁 templates/ # HTML templates
-├── 📁 static/ # Static files (CSS, JS, Images)
-└── 📁 media/ # User-uploaded files (if any)
-
+    
 ## 🧪 Example API Endpoints
 
 Method	Endpoint	Description
