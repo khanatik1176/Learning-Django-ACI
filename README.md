@@ -70,22 +70,21 @@ Follow these steps to run the project locally:
 
 ## 📂 Project Structure
 
-Learning-Django-ACI/
+📁 Learning-Django-ACI/
+├── 📄 manage.py
+├── 📄 requirements.txt
+├── 📘 README.md
 │
-├── manage.py
-├── requirements.txt
-├── README.md
+├── 📁 core/ # Main project configuration (settings, urls, etc.)
 │
-├── core/                  # Main project configuration (settings, urls, etc.)
+├── 📁 apps/
+│ ├── 📁 users/ # Handles user authentication and profiles
+│ ├── 📁 tasks/ # Example app for CRUD operations
+│ └── 📁 ... # Add more modular apps here
 │
-├── apps/
-│   ├── users/             # Handles user authentication and profiles
-│   ├── tasks/             # Example app for CRUD operations
-│   └── ...                # Add more modular apps here
-│
-├── templates/             # HTML templates
-├── static/                # Static files (CSS, JS, Images)
-└── media/                 # User-uploaded files (if any)
+├── 📁 templates/ # HTML templates
+├── 📁 static/ # Static files (CSS, JS, Images)
+└── 📁 media/ # User-uploaded files (if any)
 
 ## 🧪 Example API Endpoints
 
