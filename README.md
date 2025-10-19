@@ -98,6 +98,3 @@ python manage.py shell                  # Open interactive Django shell
 
 Khan Atik Faisal
 Software Engineer at ACI PLC
-📧 Email me
-
-🌐 GitHub Profile
