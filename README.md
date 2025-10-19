@@ -46,7 +46,10 @@ The goal of this project is to:
 Follow these steps to run the project locally:
 
 ### 1️⃣ Clone the repository
-
+    ``bash
+    git clone https://github.com/<your-username>/Learning-Django-ACI.git
+    cd Learning-Django-ACI
+    
 ### 2️⃣ Create and activate a virtual environment
     python -m venv venv
     source venv/bin/activate     # For Linux/Mac
